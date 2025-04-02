@@ -1,3 +1,16 @@
+SP25-DS677852 Deep Learning
+
+Group Number:  20
+Meeting Time:  5th April, 11:00 am
+Project Name: Whale Sound Classification Algorithm
+Project Proposal (200 words max): We aim to develop a deep learning model that classifies 2-second audio clips, distinguishing whale sounds from other noises. The approach involves converting each sound clip into a 2D image representation using a Short-Time Fourier Transform (STFT). These spectrogram images serve as input for a convolutional neural network (CNN) based on modern Inception blocks. By leveraging this architecture, the model can effectively learn complex patterns and improve classification accuracy.
+
+Dataset(s) being considered: https://github.com/TarinZ/whale-detector?tab=readme-ov-fileLinks
+
+GitHub Repository Link: https://github.com/javadahut/Final-Github-Repository
+
+Work Split Details:  The work will have the following key stages: data acquisition and processing, vectorization, embedding, development of a baseline model, training the baseline model on the dataset, constructing an enhanced model incorporating dropout, training the updated model, and conducting a comparative evaluation to assess performance improvements. We plan to contribute equally to each stage that is listed above.
+
 Project 1: CNN (InceptionV1) + STFT based Whale Detection Algorithm
 
 https://github.com/TarinZ/whale-detector?tab=readme-ov-fileLinks to an external site.
