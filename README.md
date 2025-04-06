@@ -22,6 +22,9 @@ These models will be benchmarked against the original InceptionV1 baseline used 
 
 - ✅ Enhance spectrogram preprocessing using Mel-frequency and MFCC techniques  
 - ✅ Improve model generalization with EfficientNetV2 and AST  
+
+## ✅ Recommendations
+
 - ✅ Develop an interactive UI to visualize model predictions and spectrograms  
 - ✅ Expand beyond binary classification to identify multiple whale species and marine sounds
 
@@ -49,8 +52,8 @@ These models will be benchmarked against the original InceptionV1 baseline used 
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/your-username/whale-vocalization-detector.git
-cd whale-vocalization-detector
+git clone https://github.com/javadahut/Final-Github-Repository.git
+cd Final-Github-Repository
 ```
 
 2. **Set up a virtual environment (recommended)**
@@ -102,9 +105,9 @@ All plots are saved to `outputs/` during evaluation.
 
 | Model              | Input              | AUROC Goal | Current Status |
 |--------------------|--------------------|------------|----------------|
-| InceptionV1 (baseline) | STFT Spectrogram | 0.96        | ✔️ Implemented |
-| EfficientNetV2-S   | Mel Spectrogram     | >0.98       | ⏳ In Progress |
-| AST                | Mel Spectrogram     | >0.98       | ⏳ In Progress |
+| InceptionV1 (base) | STFT Spectrogram   | 0.96       | ✔️ Implemented |
+| EfficientNetV2-S   | Mel Spectrogram    | >0.98      | ⏳ In Progress |
+| AST                | Mel Spectrogram    | >0.98      | ⏳ In Progress |
 
 ---
 
@@ -120,7 +123,7 @@ Pretrained models are automatically downloaded during training unless specified 
 
 ## 📌 Roadmap
 
-See our [Gantt-style project tracker](https://github.com/your-username/whale-vocalization-detector/blob/main/project_plan.csv) for a detailed week-by-week plan (April 4 – May 10).
+See our [Gantt-style project tracker](https://github.com/javadahut/Final-Github-Repository/blob/main/project_plan.csv) for a detailed week-by-week plan (April 4 – May 10).
 
 ---
 
