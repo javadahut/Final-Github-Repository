@@ -1,40 +1,153 @@
-SP25-DS677852 Deep Learning
 
-Group Number:  20
-Meeting Time:  5th April, 11:00 am
-Project Name: Whale Sound Classification Algorithm
-Project Proposal (200 words max): We aim to develop a deep learning model that classifies 2-second audio clips, distinguishing whale sounds from other noises. The approach involves converting each sound clip into a 2D image representation using a Short-Time Fourier Transform (STFT). These spectrogram images serve as input for a convolutional neural network (CNN) based on modern Inception blocks. By leveraging this architecture, the model can effectively learn complex patterns and improve classification accuracy.
+# 🐋 Whale Vocalization Detection with Deep Learning
 
-Dataset(s) being considered: https://github.com/TarinZ/whale-detector?tab=readme-ov-fileLinks
+This project builds on previous research from the [Kaggle Whale Detection Challenge](https://www.kaggle.com/competitions/whale-detection-challenge), which improved whale call detection accuracy from 72% to 98%—a critical advancement used to help prevent ship-whale collisions in busy shipping lanes.
 
-GitHub Repository Link: https://github.com/javadahut/Final-Github-Repository
+---
 
-Work Split Details:  The work will have the following key stages: data acquisition and processing, vectorization, embedding, development of a baseline model, training the baseline model on the dataset, constructing an enhanced model incorporating dropout, training the updated model, and conducting a comparative evaluation to assess performance improvements. We plan to contribute equally to each stage that is listed above.
+## 🔬 Project Overview
 
-Project 1: CNN (InceptionV1) + STFT based Whale Detection Algorithm
+We aim to push the boundaries of this work by:
 
-https://github.com/TarinZ/whale-detector?tab=readme-ov-fileLinks to an external site.
+- Replacing raw STFT spectrograms with **Mel-spectrograms**, which emphasize biologically relevant frequency bands for marine mammals.
+- Evaluating two state-of-the-art deep learning architectures:
+  - **EfficientNetV2-S**: A lightweight, high-performance CNN.
+  - **Audio Spectrogram Transformer (AST)**: A transformer-based model pretrained on [AudioSet](https://research.google.com/audioset/).
 
+These models will be benchmarked against the original InceptionV1 baseline used in the competition, targeting an **AUROC > 0.98**.
 
+---
 
-What the project accomplishes:
+## ✅ Goals
 
-This project aims to be able to detect if whale signals are present in water based on a 2-second sound clip where the label is either yes or no that a whale is present.
+- ✅ Enhance spectrogram preprocessing using Mel-frequency and MFCC techniques  
+- ✅ Improve model generalization with EfficientNetV2 and AST  
+- ✅ Develop an interactive UI to visualize model predictions and spectrograms  
+- ✅ Expand beyond binary classification to identify multiple whale species and marine sounds
 
+---
 
+## 📁 Project Structure
 
-In what way you believe it is innovative:
+```
+.
+├── data/                       # Data loading and augmentation scripts
+├── models/                     # Network architecture definitions
+├── utils/                      # Spectrogram processing and helpers
+├── notebooks/                  # Jupyter analysis & prototype notebooks
+├── train.py                    # CLI training script
+├── evaluate.py                 # Evaluation and visualization tools
+├── requirements.txt            # Package dependencies
+├── config.yaml                 # Model and training configuration
+└── README.md                   # Project documentation
+```
 
-I think that this project is innovative because it uses only a 2-second sound clip to distinguish something that can be mistaken for practically anything and differentiates it and classifies it. Further, it converts this sound clip into a 2d image using Short-Time-Fourier-Transform (STFT), which will then be used as training data for a CNN. In fact, it is uses modern CNN Inception blocks which ultimately can be classified as a deep learning model.
+---
 
+## 📦 Installation
 
+1. **Clone the repository**
 
-What excites you about it:
+```bash
+git clone https://github.com/your-username/whale-vocalization-detector.git
+cd whale-vocalization-detector
+```
 
-What excites me about the algorithm is that in my eyes it is incredible how with 2 seconds of audio it can detect a signal from a whale. In addition, it is modern and has a creative approach, using a transformation to manipulate the data to be used in a CNN.
+2. **Set up a virtual environment (recommended)**
 
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
+3. **Install dependencies**
 
-Any possible uses you could imagine or be interested in:
+```bash
+pip install -r requirements.txt
+```
 
-With this algorithm and theory, there are endless possibilities for use. I recently saw a movie about someone lost in the tundra and perhaps their calling out can be symbolized as the whale signal in our current situation, for them to be eventually saved. Another use case could be having a longer audio and determining whether an event is happening somewhere in space for example a black hole or supernova.
+4. **Download and prepare the dataset**  
+Follow the dataset instructions in `data/README.md` or refer to the [Kaggle competition page](https://www.kaggle.com/competitions/whale-detection-challenge).
+
+---
+
+## 🚀 Getting Started
+
+To train the model using a configuration:
+
+```bash
+python train.py --config config.yaml
+```
+
+To evaluate:
+
+```bash
+python evaluate.py --checkpoint models/best_model.pth
+```
+
+---
+
+## 📊 Results & Visualizations
+
+- Training and validation curves
+- ROC & PR curves
+- Confusion matrices
+- Audio + spectrogram playback for manual inspection (UI coming soon)
+
+All plots are saved to `outputs/` during evaluation.
+
+---
+
+## 📈 Benchmark Targets
+
+| Model              | Input              | AUROC Goal | Current Status |
+|--------------------|--------------------|------------|----------------|
+| InceptionV1 (baseline) | STFT Spectrogram | 0.96        | ✔️ Implemented |
+| EfficientNetV2-S   | Mel Spectrogram     | >0.98       | ⏳ In Progress |
+| AST                | Mel Spectrogram     | >0.98       | ⏳ In Progress |
+
+---
+
+## 🧠 Pretrained Models
+
+We use pretrained weights for:
+- AST (pretrained on AudioSet)
+- EfficientNetV2-S (from torchvision or timm)
+
+Pretrained models are automatically downloaded during training unless specified otherwise.
+
+---
+
+## 📌 Roadmap
+
+See our [Gantt-style project tracker](https://github.com/your-username/whale-vocalization-detector/blob/main/project_plan.csv) for a detailed week-by-week plan (April 4 – May 10).
+
+---
+
+## 🙌 Contributing
+
+We welcome contributions! To get started:
+
+1. Fork the repository
+2. Create a new branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m "Add new feature"`
+4. Push your branch: `git push origin feature/my-feature`
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## 📚 Citation
+
+If you use this project, please consider citing:
+
+> Kaggle Whale Detection Challenge:  
+> https://www.kaggle.com/competitions/whale-detection-challenge/
+
+> Gong et al. (2021). AST: Audio Spectrogram Transformer  
+> https://arxiv.org/abs/2104.01778
