@@ -106,13 +106,21 @@ Example command:
 ```
 
   -fs: Sampling frequency (16,000 Hz)
+  
   -tx: Duration to process from each file (2.0 sec)
+  
   -tf: Frame length (0.071 sec)
+  
   -po: Frame overlap (75%)
+  
   -fftl: FFT length (1024)
+  
   -fftw: Window type ('hanning' supported)
+  
   -rk: Range of FFT rows to keep (indices 30 to 200)
+  
   -s: Save output flag (1 means outputs will be saved)
+  
   -ins: Inspect flag (2 enables visualization during processing)
 
 Processed NumPy arrays (pData.npy and pLabels.npy) will be saved in data/processed/
