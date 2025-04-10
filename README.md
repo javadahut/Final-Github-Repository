@@ -75,7 +75,7 @@ pip install -r requirements.txt
 ```
 
 4. **Download and prepare the dataset**  
-Follow the dataset instructions in `data/README.md` or refer to the [Kaggle competition page](https://www.kaggle.com/competitions/whale-detection-challenge).
+Follow the dataset instructions at [Kaggle competition page](https://www.kaggle.com/competitions/whale-detection-challenge).
 
 Place your raw 2-second audio files (16kHz, ~32,000 samples per file) in data/train/.
 
@@ -88,39 +88,32 @@ Preprocessing Audio Files
 The main preprocessing script converts audio files to STFT (or Mel-spectrogram) representations and saves them as NumPy arrays.
 
 Example command:
-'''
-cd src/
-python whaleDataCreatorToNumpy.py \
-  -dataDir ../data/train/ \
-  -labelcsv ../data/train.csv \
-  -dataDirProcessed ../data/processed/ \
-  -fs 16000 \
-  -tx 2.0 \
-  -tf 0.071 \
-  -po 0.75 \
-  -fftl 1024 \
-  -fftw hanning \
-  -rk 30 200 \
-  -s 1 \
-  -ins 2
-'''
--fs: Sampling frequency (16,000 Hz)
+```
+  cd src/
+  python whaleDataCreatorToNumpy.py \
+    -dataDir ../data/train/ \
+    -labelcsv ../data/train.csv \
+    -dataDirProcessed ../data/processed/ \
+    -fs 16000 \
+    -tx 2.0 \
+    -tf 0.071 \
+    -po 0.75 \
+    -fftl 1024 \
+    -fftw hanning \
+    -rk 30 200 \
+    -s 1 \
+    -ins 2
+```
 
--tx: Duration to process from each file (2.0 sec)
-
--tf: Frame length (0.071 sec)
-
--po: Frame overlap (75%)
-
--fftl: FFT length (1024)
-
--fftw: Window type ('hanning' supported)
-
--rk: Range of FFT rows to keep (indices 30 to 200)
-
--s: Save output flag (1 means outputs will be saved)
-
--ins: Inspect flag (2 enables visualization during processing)
+  -fs: Sampling frequency (16,000 Hz)
+  -tx: Duration to process from each file (2.0 sec)
+  -tf: Frame length (0.071 sec)
+  -po: Frame overlap (75%)
+  -fftl: FFT length (1024)
+  -fftw: Window type ('hanning' supported)
+  -rk: Range of FFT rows to keep (indices 30 to 200)
+  -s: Save output flag (1 means outputs will be saved)
+  -ins: Inspect flag (2 enables visualization during processing)
 
 Processed NumPy arrays (pData.npy and pLabels.npy) will be saved in data/processed/
 
@@ -130,13 +123,10 @@ Processed NumPy arrays (pData.npy and pLabels.npy) will be saved in data/process
 
 After training, you can generate:
 
-Training and validation performance curves.
-
-ROC & Precision-Recall curves.
-
-Confusion matrices.
-
-Interactive plots for manual inspection of spectrograms.
+  Training and validation performance curves.
+  ROC & Precision-Recall curves.
+  Confusion matrices.
+  Interactive plots for manual inspection of spectrograms.
 
 All results are saved to the outputs/ directory.
 
@@ -163,15 +153,12 @@ Pretrained models are automatically downloaded during training unless specified 
 ---
 
 ## 🛠 Future Work & Roadmap
-Enhance Preprocessing: Transition from raw STFTs to Mel-spectrograms and explore MFCCs.
+- Enhance Preprocessing: Transition from raw STFTs to Mel-spectrograms and explore MFCCs.
+- Advanced Modeling: Evaluate and fine-tune EfficientNetV2-S and AST models.
+- Visualization Tools: Develop an interactive UI to help interpret model predictions.
+- Extension to Multi-Class: Expand detection to include multiple whale species and other marine sounds.
 
-Advanced Modeling: Evaluate and fine-tune EfficientNetV2-S and AST models.
-
-Visualization Tools: Develop an interactive UI to help interpret model predictions.
-
-Extension to Multi-Class: Expand detection to include multiple whale species and other marine sounds.
-
-Refer to our Gantt-style project tracker https://github.com/your-username/Final-Whale-Detection-Project/blob/main/project_plan.csv for a detailed week-by-week plan.for a detailed week-by-week plan (April 4 – May 10).
+Refer to our Gantt-style project tracker https://github.com/your-username/Final-Whale-Detection-Project/blob/main/project_plan.csv for a detailed week-by-week plan (April 4 – May 10).
 
 ---
 
