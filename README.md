@@ -166,7 +166,7 @@ Pretrained models are automatically downloaded during training unless specified 
 - Visualization Tools: Develop an interactive UI to help interpret model predictions.
 - Extension to Multi-Class: Expand detection to include multiple whale species and other marine sounds.
 
-Refer to our Gantt-style project tracker https://github.com/your-username/Final-Whale-Detection-Project/blob/main/project_plan.csv for a detailed week-by-week plan (April 4 – May 10).
+Refer to our Gantt-style project tracker https://github.com/javadahut/Final-Github-Repository/blob/main/project_plan.csv for a detailed week-by-week plan (April 4 – May 10).
 
 ---
 
