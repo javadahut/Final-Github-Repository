@@ -7,42 +7,45 @@ This project builds on previous research from the [Kaggle Whale Detection Challe
 
 ## 🔬 Project Overview
 
-We aim to push the boundaries of this work by:
+Our goal is to develop a deep learning system that detects whale vocalizations by:
+- Converting raw audio into robust spectrogram representations using an optimized Short-Time Fourier Transform (STFT) implementation.
+- Transitioning to Mel-spectrograms to emphasize biologically relevant frequency bands.
+- Evaluating state-of-the-art architectures including:
+  - **EfficientNetV2-S:** A lightweight, high-performance CNN.
+  - **Audio Spectrogram Transformer (AST):** A transformer-based model pretrained on [AudioSet](https://research.google.com/audioset/).
 
-- Replacing raw STFT spectrograms with **Mel-spectrograms**, which emphasize biologically relevant frequency bands for marine mammals.
-- Evaluating two state-of-the-art deep learning architectures:
-  - **EfficientNetV2-S**: A lightweight, high-performance CNN.
-  - **Audio Spectrogram Transformer (AST)**: A transformer-based model pretrained on [AudioSet](https://research.google.com/audioset/).
-
-These models will be benchmarked against the original InceptionV1 baseline used in the competition, targeting an **AUROC > 0.98**.
+These models will be benchmarked against an InceptionV1 baseline, with a target AUROC > 0.98.
 
 ---
 
 ## ✅ Goals
 
-- ✅ Enhance spectrogram preprocessing using Mel-frequency and MFCC techniques  
-- ✅ Improve model generalization with EfficientNetV2 and AST  
-
-## ✅ Recommendations
-
-- ✅ Develop an interactive UI to visualize model predictions and spectrograms  
-- ✅ Expand beyond binary classification to identify multiple whale species and marine sounds
+- **Preprocessing:** Enhance feature extraction using Mel-frequency or MFCC techniques.
+- **Modeling:** Improve generalization via EfficientNetV2-S and AST.
+- **Visualization:** Develop an interactive UI to display spectrograms and model predictions.
+- **Scalability:** Expand from binary detection to multi-class classification (e.g., multiple whale species and other marine sounds).
 
 ---
 
 ## 📁 Project Structure
 
 ```
-.
-├── data/                       # Data loading and augmentation scripts
-├── models/                     # Network architecture definitions
-├── utils/                      # Spectrogram processing and helpers
-├── notebooks/                  # Jupyter analysis & prototype notebooks
-├── train.py                    # CLI training script
-├── evaluate.py                 # Evaluation and visualization tools
-├── requirements.txt            # Package dependencies
-├── config.yaml                 # Model and training configuration
-└── README.md                   # Project documentation
+Final-Whale-Detection-Project/
+ ├── README.md # Project overview and documentation
+ ├── requirements.txt # Python dependencies
+ ├── .gitignore # Files/folders to ignore in GitHub
+ ├── data/
+ │ ├── train/ # Raw audio files (.aif, .aiff, etc.)
+ │ ├── processed/ # Processed outputs (e.g., pData.npy, pLabels.npy)
+ │ └── train.csv # CSV file mapping audio filenames to labels
+ ├── src/
+ │ ├── dependencies.py # Unified dependencies and environment setup
+ │ ├── helperFunctions.py # STFT class, forward propagation utilities, etc.
+ │ └── whaleDataCreatorToNumpy.py # Main script to preprocess audio data
+ ├── models/ # Directory for storing trained model files
+ ├── notebooks/ # Jupyter notebooks for experiments, visualization, etc.
+ ├── outputs/ # Training logs, ROC curves, evaluation plots, etc.
+ └── scripts/ # Helper shell or batch scripts (optional)
 ```
 
 ---
@@ -58,9 +61,11 @@ cd Final-Github-Repository
 
 2. **Set up a virtual environment (recommended)**
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
+```python3 -m venv venv
+source venv/bin/activate   # Linux/Mac
+# or on Windows:
+venv\Scripts\activate
+
 ```
 
 3. **Install dependencies**
@@ -72,42 +77,78 @@ pip install -r requirements.txt
 4. **Download and prepare the dataset**  
 Follow the dataset instructions in `data/README.md` or refer to the [Kaggle competition page](https://www.kaggle.com/competitions/whale-detection-challenge).
 
+Place your raw 2-second audio files (16kHz, ~32,000 samples per file) in data/train/.
+
+Ensure your train.csv file (located in data/) contains the filenames and corresponding labels.
 ---
 
 ## 🚀 Getting Started
 
-To train the model using a configuration:
+Preprocessing Audio Files
+The main preprocessing script converts audio files to STFT (or Mel-spectrogram) representations and saves them as NumPy arrays.
 
-```bash
-python train.py --config config.yaml
-```
+Example command:
 
-To evaluate:
+cd src/
+python whaleDataCreatorToNumpy.py \
+  -dataDir ../data/train/ \
+  -labelcsv ../data/train.csv \
+  -dataDirProcessed ../data/processed/ \
+  -fs 16000 \
+  -tx 2.0 \
+  -tf 0.071 \
+  -po 0.75 \
+  -fftl 1024 \
+  -fftw hanning \
+  -rk 30 200 \
+  -s 1 \
+  -ins 2
 
-```bash
-python evaluate.py --checkpoint models/best_model.pth
-```
+-fs: Sampling frequency (16,000 Hz)
+
+-tx: Duration to process from each file (2.0 sec)
+
+-tf: Frame length (0.071 sec)
+
+-po: Frame overlap (75%)
+
+-fftl: FFT length (1024)
+
+-fftw: Window type ('hanning' supported)
+
+-rk: Range of FFT rows to keep (indices 30 to 200)
+
+-s: Save output flag (1 means outputs will be saved)
+
+-ins: Inspect flag (2 enables visualization during processing)
+
+Processed NumPy arrays (pData.npy and pLabels.npy) will be saved in data/processed/
 
 ---
 
 ## 📊 Results & Visualizations
 
-- Training and validation curves
-- ROC & PR curves
-- Confusion matrices
-- Audio + spectrogram playback for manual inspection (UI coming soon)
+After training, you can generate:
 
-All plots are saved to `outputs/` during evaluation.
+Training and validation performance curves.
+
+ROC & Precision-Recall curves.
+
+Confusion matrices.
+
+Interactive plots for manual inspection of spectrograms.
+
+All results are saved to the outputs/ directory.
 
 ---
 
 ## 📈 Benchmark Targets
 
-| Model              | Input              | AUROC Goal | Current Status |
-|--------------------|--------------------|------------|----------------|
-| InceptionV1 (base) | STFT Spectrogram   | 0.96       | ✔️ Implemented |
-| EfficientNetV2-S   | Mel Spectrogram    | >0.98      | ⏳ In Progress |
-| AST                | Mel Spectrogram    | >0.98      | ⏳ In Progress |
+| Model                               | Input              | AUROC Goal | Current Status |
+|-------------------------------------|--------------------|------------|----------------|
+| InceptionV1 (Baseline)              | STFT Spectrogram   | 0.96       | ✔️ Implemented |
+| EfficientNetV2-S                    | Mel Spectrogram    | >0.98      | ⏳ In Progress |
+| Audio Spectrogram Transformer (AST) | Mel Spectrogram    | >0.98      | ⏳ In Progress |
 
 ---
 
@@ -121,9 +162,16 @@ Pretrained models are automatically downloaded during training unless specified 
 
 ---
 
-## 📌 Roadmap
+## 🛠 Future Work & Roadmap
+Enhance Preprocessing: Transition from raw STFTs to Mel-spectrograms and explore MFCCs.
 
-See our [Gantt-style project tracker](https://github.com/javadahut/Final-Github-Repository/blob/main/project_plan.csv) for a detailed week-by-week plan (April 4 – May 10).
+Advanced Modeling: Evaluate and fine-tune EfficientNetV2-S and AST models.
+
+Visualization Tools: Develop an interactive UI to help interpret model predictions.
+
+Extension to Multi-Class: Expand detection to include multiple whale species and other marine sounds.
+
+Refer to our Gantt-style project tracker https://github.com/your-username/Final-Whale-Detection-Project/blob/main/project_plan.csv for a detailed week-by-week plan.for a detailed week-by-week plan (April 4 – May 10).
 
 ---
 

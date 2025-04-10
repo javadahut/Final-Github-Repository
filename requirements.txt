@@ -1,0 +1,10 @@
+numpy
+scipy
+torch
+torchvision
+matplotlib
+h5py
+pillow
+aifc
+six
+scikit-learn
