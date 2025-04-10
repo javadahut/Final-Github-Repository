@@ -88,7 +88,7 @@ Preprocessing Audio Files
 The main preprocessing script converts audio files to STFT (or Mel-spectrogram) representations and saves them as NumPy arrays.
 
 Example command:
-
+'''
 cd src/
 python whaleDataCreatorToNumpy.py \
   -dataDir ../data/train/ \
@@ -103,7 +103,7 @@ python whaleDataCreatorToNumpy.py \
   -rk 30 200 \
   -s 1 \
   -ins 2
-
+'''
 -fs: Sampling frequency (16,000 Hz)
 
 -tx: Duration to process from each file (2.0 sec)
