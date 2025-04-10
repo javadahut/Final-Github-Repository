@@ -1,0 +1,44 @@
+Week,Category,Task
+Week 1,Project Scoping and Setup,Refine project goals and select modifications to implement
+Week 1,Project Scoping and Setup,Set up the development environment
+Week 1,Project Scoping and Setup,"Verify dependencies, establish version control, create dev branches"
+Week 1,Project Scoping and Setup,Review the existing codebase and team familiarization
+Week 1,Project Scoping and Setup,Plan implementation details for modifications
+Week 1,Project Scoping and Setup,Refactor files into modular structure
+Week 1,Project Scoping and Setup,Add requirements.txt or pyproject.toml
+Week 1,Project Scoping and Setup,Create config.yaml template
+Week 1,Project Scoping and Setup,Add CLI training entry point (train.py)
+Week 1,Deliverables,Project scope document
+Week 1,Deliverables,Development environment setup
+Week 1,Deliverables,Detailed implementation plan
+Week 2,Data Augmentation Implementation,Implement chosen data augmentation techniques
+Week 2,Data Augmentation Implementation,Modify data loading pipeline for augmentation
+Week 2,Data Augmentation Implementation,Implement spectrogram conversion (Mel/MFCCs)
+Week 2,Data Augmentation Implementation,Test augmentation pipeline with visualizations
+Week 2,Data Augmentation Implementation,Integrate augmentation into training loop
+Week 2,Deliverables,Functional data augmentation pipeline
+Week 2,Deliverables,Code integrated into training process
+Week 2,Deliverables,Visualization of augmented data samples
+Week 3,Advanced Network Architecture,"Implement advanced architecture (e.g., ResNet50)"
+Week 3,Advanced Network Architecture,Modify netDefinition.py accordingly
+Week 3,Advanced Network Architecture,Adapt training loop and hyperparameters
+Week 3,Advanced Network Architecture,Conduct initial training runs
+Week 3,Deliverables,Advanced network architecture implemented
+Week 3,Deliverables,Adjusted training loop
+Week 3,Deliverables,Preliminary training results
+Week 4,Training and Evaluation,Perform extensive training with modifications
+Week 4,Training and Evaluation,Tune hyperparameters
+Week 4,Training and Evaluation,Evaluate model performance
+Week 4,Training and Evaluation,Analyze the impact of each modification
+Week 4,Training and Evaluation,Conduct ablation studies if possible
+Week 4,Training and Evaluation,Create evaluate.py for metrics
+Week 4,Deliverables,Trained model
+Week 4,Deliverables,Evaluation metrics and visualizations
+Week 4,Deliverables,Analysis of each modification
+Week 5,Refinement and Documentation,Refine model and address issues
+Week 5,Refinement and Documentation,Document changes and development process
+Week 5,Refinement and Documentation,Update README.md and code comments
+Week 5,Refinement and Documentation,Prepare final report or presentation
+Week 5,Deliverables,Final version of the code
+Week 5,Deliverables,Updated documentation
+Week 5,Deliverables,Final report/presentation
