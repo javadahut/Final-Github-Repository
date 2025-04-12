@@ -3,6 +3,14 @@ import numpy as np
 import sys
 import torch
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
+
+def cross_entropy_loss(yEst, labels, gpuFlag=None):
+    """
+    Computes the cross entropy loss.
+    The extra argument gpuFlag is ignored.
+    """
+    return F.cross_entropy(yEst, labels)
 
 class STFT(object):
     """
@@ -69,7 +77,8 @@ def extractForwardPropResults_binary(theNet, theDataLoader, gpuFlag='0'):
     lossValue = 0.0
     softPredictions = []
     targets = []
-
+    sm = torch.nn.Softmax(dim=1)   # Define Softmax function here
+    
     for ff, data in enumerate(theDataLoader, 0):
         images, labels = data
 
