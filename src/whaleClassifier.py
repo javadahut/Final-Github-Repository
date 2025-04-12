@@ -211,7 +211,7 @@ def main():
         save_vals_accuracies()
 
     print("FIN")
-    pdb.set_trace()
+    #pdb.set_trace()
 
 if __name__ == '__main__':
     freeze_support()  # Uncomment if freezing to an executable; otherwise, this is safe to call.
