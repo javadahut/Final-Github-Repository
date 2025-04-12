@@ -130,39 +130,44 @@ python whaleDataCreatorNumpyToTorchTensors.py -numpyDataDir ../data/processed/ -
 ```
 
 
-Available DNN Architectures
-cnn_108x108
-A standard convolutional neural network designed for 108×108 input images. It consists of several layers of convolution, batch normalization, ReLU activation, pooling, and dropout, followed by a series of fully connected layers. This model serves as a baseline architecture for classification.
+## Available DNN Architectures
 
-inceptionModuleV1_108x108
-An inception-style network designed specifically for 108×108 inputs. It starts with convolutional “root” layers that downsample the image, then branches out into multiple parallel paths with different kernel sizes (1×1, 3×3, 5×5, and pooling). The outputs of these branches are concatenated, passed through a reduction (redux) stage, and finally classified.
+- **cnn_108x108**  
+  A standard convolutional neural network designed for 108×108 input images. It consists of several layers of convolution, batch normalization, ReLU activation, pooling, and dropout, followed by a series of fully connected layers. This model serves as a baseline architecture for classification.
 
-inceptionModuleV1_75x45
-A variant of the inception module aimed at smaller input sizes (75×45). Similar in design to the 108×108 version, this network also employs parallel branches to extract multi-scale features. It is suitable when the processing pipeline outputs spectrograms at a lower resolution.
+- **inceptionModuleV1_108x108**  
+  An inception-style network designed specifically for 108×108 inputs. It starts with convolutional “root” layers that downsample the image, then branches out into multiple parallel paths with different kernel sizes (1×1, 3×3, 5×5, and pooling). The outputs of these branches are concatenated, passed through a reduction stage, and finally classified.
 
-inceptionTwoModulesV1_75x45
-This network extends the single inception module design by stacking two sequential inception modules for 75×45 inputs. The first module processes the input and the second further refines the concatenated multi-scale features. This extra depth provides enhanced feature extraction capacity for more complex patterns.
+- **inceptionModuleV1_75x45**  
+  A variant of the inception module aimed at smaller input sizes (75×45). Similar in design to the 108×108 version, this network also employs parallel branches to extract multi-scale features. It is suitable when the processing pipeline outputs spectrograms at a lower resolution.
 
-inceptionTwoModulesV1_root1_75x45
-A variation on the two-module inception architecture with an alternate “root” (initial convolution) configuration for 75×45 inputs. This adjustment in the early layers can affect the receptive field and overall feature extraction process, offering another design choice for experimentation.
+- **inceptionTwoModulesV1_75x45**  
+  This network extends the single inception module design by stacking two sequential inception modules for 75×45 inputs. The first module processes the input and the second further refines the concatenated multi-scale features. This additional depth enhances feature extraction for more complex patterns.
 
-inceptionV1_modularized
-A modular, configurable version of the Inception V1 architecture designed for 75×45 inputs. It allows the user to specify the number of inception layers (using the -nils argument), so the depth of the network can be adjusted according to the task complexity. After processing through several modular inception blocks, the features are aggregated via a redux layer and classified through fully connected layers.
+- **inceptionTwoModulesV1_root1_75x45**  
+  A variation on the two-module inception architecture with an alternate “root” (initial convolution) configuration for 75×45 inputs. This adjustment alters the receptive field and overall feature extraction process, offering an alternative design for experimentation.
 
-inceptionV1_modularized_mnist
-A simplified modularized inception model optimized for small-scale inputs similar to MNIST data (typically 28×28). It uses a tailored “root” network and a more compact design to yield a latent embedding that is then mapped to a small number of output classes. This is useful for benchmark tasks or when working with very small input images.
+- **inceptionV1_modularized**  
+  A modular, configurable version of the Inception V1 architecture designed for 75×45 inputs. It allows the user to specify the number of inception layers (using the `-nils` argument), so the network depth can be adjusted according to task complexity. After processing through multiple modular inception blocks, the features are aggregated via a redux layer and classified through fully connected layers.
 
-centerlossSimple
-This network incorporates center loss to encourage intra-class compactness in the learned feature space. It uses a CNN “root” network to extract features from the input, followed by a linear layer that produces a latent representation. Class centroids are initialized and maintained, and the final classification is done via another linear layer. This model is intended for scenarios where improved feature discrimination (and hence reduced intra-class variance) is needed.
+- **inceptionV1_modularized_mnist**  
+  A simplified modular inception model optimized for very small-scale inputs (such as MNIST images, typically 28×28). It uses a tailored “root” network and a more compact design to produce a latent embedding that is then mapped to a small number of output classes. This design is useful for benchmark or low-resolution tasks.
 
-How to Select a Model
+- **centerlossSimple**  
+  This network integrates center loss to promote intra-class compactness in the feature space. A CNN “root” network first extracts features from the input, then a linear layer produces a latent representation with maintained class centroids. Finally, another linear layer performs classification. This model is intended to enhance feature discrimination by reducing intra-class variability.
+
+## How to Select a Model
 When you run the training script (e.g. whaleClassifier.py), you can choose one of these architectures by specifying the appropriate value for the -dnn parameter. For example:
 
 For a standard CNN designed for 108×108 inputs, run:
+```
 python whaleClassifier.py -dataDirProcessed ../data/processed/ -dnn "cnn_108x108" ...
+```
 
 For an inception-style model on 108×108 inputs, run:
+```
 python whaleClassifier.py -dataDirProcessed ../data/processed/ -dnn "inceptionModuleV1_108x108" ...
+```
 
 For lower resolution spectrograms (75×45), you can similarly choose from the other available options.
 
