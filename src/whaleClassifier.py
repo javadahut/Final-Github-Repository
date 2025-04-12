@@ -9,12 +9,8 @@ import torch.nn.functional as F
 import time
 import pdb
 from torch.autograd import Variable
-from multiprocessing import freeze_support  # Only necessary when freezing to an executable
-
-# Define our loss function alias
-def cross_entropy_loss(yEst, labels, gpuFlag=None):
-    # Ignore gpuFlag; simply compute and return cross entropy loss.
-    return F.cross_entropy(yEst, labels)
+from multiprocessing import freeze_support
+from torch.utils.data import TensorDataset, DataLoader
 
 # Helper grouping classes.
 class directory:
@@ -47,12 +43,12 @@ def main():
     parser.add_argument('-dp', dest='dataParallel', default='0')
     parser.add_argument('-cpu', dest='cpuFlag', default=0, type=int,
                         help='Set to 1 to force running on CPU')
-    parser.add_argument('-e', dest='epochs', default=1, type=int)
-    parser.add_argument('-lr', dest='learningRate', default=0.001, type=float)
-    parser.add_argument('-L2', dest='l2_weightDecay', default=0.0001, type=float)
+    parser.add_argument('-e', dest='epochs', default=10, type=int)
+    parser.add_argument('-lr', dest='learningRate', default=5e-5, type=float)
+    parser.add_argument('-L2', dest='l2_weightDecay', default=0.001, type=float)
     parser.add_argument('-mb', dest='minibatchSize', default=16, type=int)
-    parser.add_argument('-s', dest='savingOptions', default=0)
-    parser.add_argument('-dnn', dest='dnnArchitecture', default='inceptionModuleV1_75x45')
+    parser.add_argument('-s', dest='savingOptions', default=3)
+    parser.add_argument('-dnn', dest='dnnArchitecture', default='inceptionModuleV1_108x108')
     parser.add_argument('-nils', dest='numberOfInceptionLayers', default=-1, type=int)
     args = parser.parse_args()
 
@@ -64,11 +60,9 @@ def main():
     if N.minibatchSize % 2 != 0:
         raise ValueError('Minibatch size must be even.')  
 
-    # Create the network.
-    global net  # so that our save_net() can see the net variable
+    global net
     net = Net(args.dnnArchitecture, w_init_scheme='He', bias_inits=1.0, incep_layers=args.numberOfInceptionLayers)
 
-    # If the CPU flag is not set, then move the network to GPU if requested.
     if args.cpuFlag != 1:
         if args.gpuFlag != '0':
             torch.cuda.set_device(0)
@@ -79,7 +73,7 @@ def main():
     optimizer = optim.Adam(net.parameters(), lr=float(args.learningRate),
                            weight_decay=float(args.l2_weightDecay))
 
-    # Load tensor data.
+    # Load training and validation data
     tTrainingDataPos = torch.load(directory.loadDataFrom + 'tTrainingDataPos')
     tTrainingDataNeg = torch.load(directory.loadDataFrom + 'tTrainingDataNeg')
     tValData = torch.load(directory.loadDataFrom + 'tValData')
@@ -87,7 +81,6 @@ def main():
     tTrainingLabelsPos = torch.ones(tTrainingDataPos.size(0)).long()
     tTrainingLabelsNeg = torch.zeros(tTrainingDataNeg.size(0)).long()
 
-    from torch.utils.data import TensorDataset, DataLoader
     dataSetPos = TensorDataset(tTrainingDataPos, tTrainingLabelsPos)
     dataSetNeg = TensorDataset(tTrainingDataNeg, tTrainingLabelsNeg)
     dataVal = TensorDataset(tValData, tValLabels)
@@ -95,7 +88,6 @@ def main():
     positiveDataLoader = DataLoader(dataSetPos, batch_size=N.minibatchSize//2, shuffle=True, num_workers=2)
     negativeDataLoader = DataLoader(dataSetNeg, batch_size=N.minibatchSize//2, shuffle=True, num_workers=2)
     validationDataLoader = DataLoader(dataVal, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
-
     ins_positiveDataLoader = DataLoader(dataSetPos, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
     ins_negativeDataLoader = DataLoader(dataSetNeg, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
 
@@ -113,7 +105,6 @@ def main():
     for epoch in range(N.epochs):
         instantaneousLoss = 0.0
         accumulatedLoss = 0.0
-
         posIterator = iter(positiveDataLoader)
         negIterator = iter(negativeDataLoader)
         net.train()
@@ -140,7 +131,7 @@ def main():
             
             optimizer.zero_grad()
             yEst = net(currentBatchData)
-            loss = cross_entropy_loss(yEst, currentBatchLabels)
+            loss = F.cross_entropy(yEst, currentBatchLabels)
             loss.backward()
             optimizer.step()
             
@@ -169,7 +160,7 @@ def main():
                         ta_totalData, ta_totalLabels = ta_totalData.cuda(), ta_totalLabels.cuda()
                     yEst_ta = net(ta_totalData)
                     ta_softPredictions = sm(yEst_ta)[:, 1]
-                    taLoss += cross_entropy_loss(yEst_ta, ta_totalLabels).item()
+                    taLoss += F.cross_entropy(yEst_ta, ta_totalLabels).item()
                     trainingCorrect += ((ta_softPredictions.cpu().data.numpy() > 0.5) ==
                                         ta_totalLabels.cpu().data.numpy()).sum()
                     trainingTotal += ta_totalLabels.size(0)
@@ -210,9 +201,22 @@ def main():
         save_net()
         save_vals_accuracies()
 
+    # --- Evaluate on the test set and save test predictions ---
+    try:
+        tTestData = torch.load(directory.loadDataFrom + 'tTestData')
+        tTestLabels = torch.load(directory.loadDataFrom + 'tTestLabels')
+        testDataset = TensorDataset(tTestData, tTestLabels)
+        testDataLoader = DataLoader(testDataset, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
+        testSoftPredictions, testTargets, testLoss = extractForwardPropResults_binary(net, testDataLoader, gpuFlag=args.gpuFlag)
+        np.save('endTrain_testSoftPredictions.npy', testSoftPredictions)
+        np.save('endTrain_testTargets.npy', testTargets)
+        print("Test predictions saved successfully.")
+    except Exception as e:
+        print("Test set evaluation failed: ", e)
+
     print("FIN")
     #pdb.set_trace()
 
 if __name__ == '__main__':
-    freeze_support()  # Uncomment if freezing to an executable; otherwise, this is safe to call.
+    freeze_support()
     main()

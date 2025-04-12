@@ -78,7 +78,7 @@ def extractForwardPropResults_binary(theNet, theDataLoader, gpuFlag='0'):
     softPredictions = []
     targets = []
     sm = torch.nn.Softmax(dim=1)   # Define Softmax function here
-    
+
     for ff, data in enumerate(theDataLoader, 0):
         images, labels = data
 
@@ -112,3 +112,29 @@ def qImage(image):
     """ Quickly display a 2D numpy array as an image. """
     plt.imshow(image, interpolation='none', aspect='auto')
     plt.show()
+
+from sklearn.metrics import precision_recall_curve, average_precision_score, roc_curve, roc_auc_score
+import numpy as np
+
+def extractMetrics(softPredictions, targets):
+    """
+    Given soft predictions and true target labels, compute evaluation metrics:
+      - precision, recall: for Precision-Recall curve,
+      - AP: average precision score,
+      - FPR, TPR: false positive and true positive rates for ROC curve,
+      - AUCROC: area under the ROC curve.
+      
+    Arguments:
+      softPredictions: numpy array of soft output predictions.
+      targets: numpy array of binary true labels (0 or 1).
+      
+    Returns:
+      precision, recall, ap, fpr, tpr, aucroc
+    """
+    sp = softPredictions.ravel()
+    t = targets.ravel()
+    precision, recall, _ = precision_recall_curve(t, sp)
+    ap = average_precision_score(t, sp)
+    fpr, tpr, _ = roc_curve(t, sp)
+    aucroc = roc_auc_score(t, sp)
+    return precision, recall, ap, fpr, tpr, aucroc
