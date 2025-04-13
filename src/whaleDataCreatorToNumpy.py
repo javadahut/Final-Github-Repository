@@ -113,30 +113,39 @@ for ii in range(N.data):
         import librosa
         n_fft = args.fftl
         hop_length = int(np.floor(args.fs * args.tf * (1 - args.po)))
-        n_mels = 128  # You might want to add an argument to control this
+        n_mels = 128  # You can later make this configurable
         melSpectrogram = librosa.feature.melspectrogram(y=signal, sr=args.fs, n_fft=n_fft,
                                                         hop_length=hop_length, n_mels=n_mels)
         processedImage = librosa.power_to_db(melSpectrogram, ref=np.max)
     else:
         raise ValueError("Unknown feature type: " + args.featureType)
 
-    # If downsampling is used, apply downsampling to processedImage
+    # Optional downsampling if requested
     if args.ds != -1.0:
+        from PIL import Image
         procImgPIL = Image.fromarray(processedImage)
-        new_dims = (int(np.floor(args.ds * processedImage.shape[1])), int(np.floor(args.ds * processedImage.shape[0])))
+        new_dims = (int(np.floor(args.ds * processedImage.shape[1])),
+                    int(np.floor(args.ds * processedImage.shape[0])))
         procImgPIL = procImgPIL.resize(new_dims, Image.BICUBIC)
         processedImage = np.asarray(procImgPIL)
 
-    # Optional: Padding or trimming can be done here if desired.
-    # For now, we set expected_shape to the current shape of processedImage.
+    # Resize to fixed dimensions for network compatibility (108 x 108)  
+    from PIL import Image
+    procImgPIL = Image.fromarray(processedImage)
+    fixed_dims = (108, 108)
+    procImgPIL = procImgPIL.resize(fixed_dims, Image.BICUBIC)
+    processedImage = np.asarray(procImgPIL)
+
+    # -- Allocate pData/pLabels after knowing frame count --
     if frame_shape is None:
-        frame_shape = processedImage.shape  # (height, width)
+        frame_shape = processedImage.shape  # Should now be (108, 108)
         pData = np.zeros((N.data, 1, frame_shape[0], frame_shape[1]), dtype=np.float32)
         pLabels = -1 * np.ones(N.data, dtype=np.int64)
 
-    # Store result: use processedImage (which holds STFT or Mel output)
+    # Save processedImage into pData array (corrected variable name)
     pData[cc, 0, :, :] = processedImage
     pLabels[cc] = int(csvList[ii][1])
+
 
     # Optional inspection
     if args.ins == 1:
