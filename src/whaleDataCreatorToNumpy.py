@@ -1,21 +1,3 @@
-# ------------------------- Argument Documentation --------------------------
-# | Argument          | Type     | Default | Description                    |
-# |-------------------|----------|---------|--------------------------------|
-# | -dataDir          | str      | None    | Path to input data directory   |
-# | -labelcsv         | str      | None    | Path to CSV file with labels   |
-# | -dataDirProcessed | str      | None    | Directory to save processed data |
-# | -fs               | float    | 2000.0  | Sampling frequency in Hz       |
-# | -tx               | float    | 2.0     | Duration of time segment in sec|
-# | -tf               | float    | 0.071   | Frame length in seconds        |
-# | -po               | float    | 0.75    | Frame overlap as a proportion  |
-# | -fftl             | int      | 512     | FFT length                     |
-# | -fftw             | str      | 'rect'  | FFT window type                |
-# | -rk               | (int,int)| (20,128)| Range of FFT rows to keep      |
-# | -ds               | float    | -1.0    | Downsample factor (-1 = no DS) |
-# | -s                | int      | 0       | Save flag (1 to save npy files)|
-# | -ins              | int      | 0       | Inspect flag (1=debug, 2=plot) |
-# ---------------------------------------------------------------------------
-
 from helperFunctions import *
 import os
 import numpy as np
@@ -43,7 +25,6 @@ def id_duplicates(directory):
                 seen_hashes.add(filehash)
     return duplicates
 
-
 # -- Helper Namespaces for Data Parameters --
 class directory: pass
 class filename: pass
@@ -51,7 +32,6 @@ class F: pass
 class T: pass
 class N: pass
 class I: pass
-
 
 # -- Argument Parsing --
 parser = argparse.ArgumentParser(description='Whale Data Preprocessor')
@@ -68,8 +48,10 @@ parser.add_argument('-rk', default=(20, 128), nargs='+', type=int)
 parser.add_argument('-ds', default=-1.0, type=float)
 parser.add_argument('-s', default=0, type=int)
 parser.add_argument('-ins', default=0, type=int)
+# New argument to choose feature type:
+parser.add_argument('-feature', dest='featureType', default='stft', type=str, choices=['stft', 'mel'],
+                    help='Feature extraction type: "stft" or "mel"')
 args = parser.parse_args()
-
 
 # -- Configuration --
 directory.dataDir = args.dataDir
@@ -83,7 +65,11 @@ N.fftLength = args.fftl
 I.rowsKept = np.asarray(range(args.rk[0], args.rk[1]))
 fftWindow = args.fftw
 
-# -- Create STFT Object --
+# Create processed data directory if it doesn't exist
+if not os.path.exists(directory.dataDirProcessed):
+    os.makedirs(directory.dataDirProcessed)
+
+# -- Create STFT Object (for use when featureType is 'stft') --
 stftObj = STFT(F.fs, T.x, T.olap, T.frameLength, fftLength=N.fftLength, window=fftWindow, flagDebug=True)
 
 # -- Read CSV Labels --
@@ -119,35 +105,37 @@ for ii in range(N.data):
     signal -= np.mean(signal)
     signal /= np.std(signal)
 
-    # Compute STFT
-    stftObj.computeSTFT(signal)
-    stftImage = np.abs(stftObj.stftMatrix[I.rowsKept, :])
+    # Compute feature (STFT or Mel spectrogram)
+    if args.featureType == 'stft':
+        stftObj.computeSTFT(signal)
+        processedImage = np.abs(stftObj.stftMatrix[I.rowsKept, :])
+    elif args.featureType == 'mel':
+        import librosa
+        n_fft = args.fftl
+        hop_length = int(np.floor(args.fs * args.tf * (1 - args.po)))
+        n_mels = 128  # You might want to add an argument to control this
+        melSpectrogram = librosa.feature.melspectrogram(y=signal, sr=args.fs, n_fft=n_fft,
+                                                        hop_length=hop_length, n_mels=n_mels)
+        processedImage = librosa.power_to_db(melSpectrogram, ref=np.max)
+    else:
+        raise ValueError("Unknown feature type: " + args.featureType)
 
-    # -- Allocate pData/pLabels after knowing frame count --
+    # If downsampling is used, apply downsampling to processedImage
+    if args.ds != -1.0:
+        procImgPIL = Image.fromarray(processedImage)
+        new_dims = (int(np.floor(args.ds * processedImage.shape[1])), int(np.floor(args.ds * processedImage.shape[0])))
+        procImgPIL = procImgPIL.resize(new_dims, Image.BICUBIC)
+        processedImage = np.asarray(procImgPIL)
+
+    # Optional: Padding or trimming can be done here if desired.
+    # For now, we set expected_shape to the current shape of processedImage.
     if frame_shape is None:
-        frame_shape = (
-            int(np.floor(args.ds * len(I.rowsKept))) if args.ds != -1 else len(I.rowsKept),
-            int(np.floor(args.ds * stftObj.N.frames)) if args.ds != -1 else stftObj.N.frames
-        )
+        frame_shape = processedImage.shape  # (height, width)
         pData = np.zeros((N.data, 1, frame_shape[0], frame_shape[1]), dtype=np.float32)
         pLabels = -1 * np.ones(N.data, dtype=np.int64)
 
-    # Optional downsampling
-    if args.ds != -1.0:
-        stftImage = Image.fromarray(stftImage)
-        stftImage = stftImage.resize((frame_shape[1], frame_shape[0]), Image.BICUBIC)
-        stftImage = np.asarray(stftImage)
-
-    # Pad or trim to expected shape
-    expected_shape = (frame_shape[0], frame_shape[1])
-    if stftImage.shape[1] < expected_shape[1]:
-        pad = expected_shape[1] - stftImage.shape[1]
-        stftImage = np.pad(stftImage, ((0, 0), (0, pad)), mode='constant')
-    elif stftImage.shape[1] > expected_shape[1]:
-        stftImage = stftImage[:, :expected_shape[1]]
-
-    # Store result
-    pData[cc, 0, :, :] = stftImage
+    # Store result: use processedImage (which holds STFT or Mel output)
+    pData[cc, 0, :, :] = processedImage
     pLabels[cc] = int(csvList[ii][1])
 
     # Optional inspection

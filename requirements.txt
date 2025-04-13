@@ -8,3 +8,6 @@ pillow
 aifc
 six
 scikit-learn
+librosa
+timm
+transformers
