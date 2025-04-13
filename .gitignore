@@ -3,8 +3,7 @@
 Thumbs.db
 
 # Ignore data outputs
-data/processed/
-models/
+data/processed*
 outputs/
 
 # Ignore Python cache
