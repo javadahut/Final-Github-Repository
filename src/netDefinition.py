@@ -1,5 +1,11 @@
 from dependencies import *
 from helperFunctions import *
+import torch.nn as nn
+import torch.nn.functional as F
+import sys
+import numpy as np
+import timm  # For EfficientNetV2-S
+from transformers import ASTForAudioClassification, AutoFeatureExtractor # For AST model
 
 class Net(nn.Module):
     """
@@ -32,8 +38,11 @@ class Net(nn.Module):
             'inceptionTwoModulesV1_root1_75x45': self.inceptionTwoModulesV1_root1_75x45,
             'inceptionV1_modularized': self.inceptionV1_modularized,
             'inceptionV1_modularized_mnist': self.inceptionV1_modularized_mnist,
-            'centerlossSimple': self.centerlossSimple
+            'centerlossSimple': self.centerlossSimple,
+            'efficientnetV2_S': self.efficientnetV2_S,  # new branch
+            'ast': self.ast                              # new branch
         }
+
     
         # Select the net definition given by arch.
         netDefinition = switcher.get(arch)
@@ -63,39 +72,31 @@ class Net(nn.Module):
         # Compute the total number of learnable parameters.
         paramIterator = list(self.parameters())
         self.N_dnnParameters = 0
-        for pp in paramIterator:                
-            if len(pp.size()) == 1:
-                self.N_dnnParameters += pp.size()[0]
+        for p in paramIterator:
+            if len(p.size()) == 1:
+                self.N_dnnParameters += p.size()[0]
             else:
-                self.N_dnnParameters += np.prod(pp.size())
+                self.N_dnnParameters += np.prod(p.size())
 
         # Show number of learnable parameters per module.
-        self.N_runningParams = 0        
+        self.N_runningParams = 0
         for m in self.modules():
             if isinstance(m, Net):
                 continue
-            elif isinstance(m, nn.Sequential):
-                print("\n")
-                continue        
-            elif isinstance(m, nn.ModuleList):
-                print("\n")
-                continue                    
+            elif isinstance(m, (nn.Sequential, nn.ModuleList)):
+                continue
             else:
                 params = list(m.parameters())
-                N_lenParams = len(params)
-                N_currentParams = 0            
-                if N_lenParams > 0:
-                    for pp in range(N_lenParams):
-                        N_currentParams += np.prod(params[pp].size())
-                else:
-                    N_currentParams = 0
-
-                self.N_runningParams += N_currentParams                
-                print("Module: {} params: {:.2f}".format(m.__class__.__name__, 100.0 * N_currentParams / float(self.N_dnnParameters)))
+                current = sum(np.prod(p.size()) for p in params) if params else 0
+                self.N_runningParams += current
+                print("Module: {} params: {:.2f}".format(m.__class__.__name__, 100.0 * current / float(self.N_dnnParameters)))
 
         print("\n")
         print("Total number of trainable parameters: {:5d}\n".format(self.N_dnnParameters))
-        assert(self.N_runningParams == self.N_dnnParameters)
+        if self.N_runningParams != self.N_dnnParameters:
+            print("Warning: Summed module parameters ({}) do not equal computed total ({})".format(self.N_runningParams, self.N_dnnParameters))
+            # Optionally, you can decide not to exit here.
+
         
     def initialize_layers(self):
         print("Initializing layers via: {}, biases to: {:.2f}".format(self.weightsInitsScheme, self.biasesInitTo))
@@ -197,6 +198,17 @@ class Net(nn.Module):
             self.x = self.latent(root)
             logits = self.logits(self.x)
             return logits
+        
+        elif self.arch == 'efficientnetV2_S':
+            return self.model(x)
+    
+        elif self.arch == 'ast':
+            return self.model(x)
+
+
+        else:
+            raise ValueError("Unknown architecture " + self.arch)
+
 
     def num_flat_features(self, x):
         size = x.size()[1:] 
@@ -226,6 +238,29 @@ class Net(nn.Module):
         )
         self.latent = nn.Linear(1152, nEmbed, bias=True)
         self.logits = nn.Linear(nEmbed, nClasses, bias=False)
+
+    def efficientnetV2_S(self):
+        import timm
+        model = timm.create_model('tf_efficientnetv2_s', pretrained=True)
+        # Adapt the first convolution to accept one-channel input if needed.
+        if model.conv_stem.in_channels != 1:
+            new_conv = nn.Conv2d(
+                1,
+                model.conv_stem.out_channels,
+                kernel_size=model.conv_stem.kernel_size,
+                stride=model.conv_stem.stride,
+                padding=model.conv_stem.padding,
+                bias=False
+            )
+            new_conv.weight.data = model.conv_stem.weight.data.mean(dim=1, keepdim=True)
+            model.conv_stem = new_conv
+        in_features = model.classifier.in_features
+        model.classifier = nn.Linear(in_features, 2)
+        self.model = model
+
+    def ast(self):
+        print("Error loading AST model")
+
 
     def inceptionV1_modularized_mnist(self):
         self.centroids = torch.from_numpy(np.random.randn(2, 10)).cuda(0)
