@@ -88,8 +88,25 @@ def main():
     positiveDataLoader = DataLoader(dataSetPos, batch_size=N.minibatchSize//2, shuffle=True, num_workers=2)
     negativeDataLoader = DataLoader(dataSetNeg, batch_size=N.minibatchSize//2, shuffle=True, num_workers=2)
     validationDataLoader = DataLoader(dataVal, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
+    #ins_positiveDataLoader = DataLoader(dataSetPos, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
+    #ins_negativeDataLoader = DataLoader(dataSetNeg, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
     ins_positiveDataLoader = DataLoader(dataSetPos, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
     ins_negativeDataLoader = DataLoader(dataSetNeg, batch_size=N.minibatchSize//2, shuffle=False, num_workers=2)
+
+    def get_balanced_batch(pos_data, pos_labels, neg_data, neg_labels, batch_size):
+        n_pos = min(batch_size // 2, len(pos_data))
+        n_neg = min(batch_size - n_pos, len(neg_data))  # Handles partial batches
+        
+        if n_pos == 0 or n_neg == 0:
+            raise ValueError("Insufficient data for balanced batch")
+            
+        pos_idx = torch.randperm(len(pos_data))[:n_pos]
+        neg_idx = torch.randperm(len(neg_data))[:n_neg]
+        
+        return (
+            torch.cat([pos_data[pos_idx], neg_data[neg_idx]]),
+            torch.cat([pos_labels[pos_idx], neg_labels[neg_idx]])
+        )
 
     N.totalTrainingSamples = tTrainingDataPos.size(0) + tTrainingDataNeg.size(0)
     N.epochs = int(args.epochs)
@@ -112,27 +129,29 @@ def main():
         for bb in range(N.miniBatchesPerEpoch):
             startTime = time.time()
             try:
-                posBatch, posLabels = next(posIterator)
+                pos_batch, pos_labels = next(posIterator)
+                neg_batch, neg_labels = next(negIterator)
+                currentBatchData, currentBatchLabels = get_balanced_batch(
+                    pos_batch, pos_labels, neg_batch, neg_labels, N.minibatchSize
+                )
             except StopIteration:
+                print("End of epoch - resetting iterators")
                 posIterator = iter(positiveDataLoader)
-                posBatch, posLabels = next(posIterator)
-            try:
-                negBatch, negLabels = next(negIterator)
-            except StopIteration:
                 negIterator = iter(negativeDataLoader)
-                negBatch, negLabels = next(negIterator)
-            
+                continue  # Skip to next iteration
+            except ValueError as e:
+                print(f"Skipping batch due to: {str(e)}")
+                continue  # Skip to next iteration
+
             if args.gpuFlag != '0' and args.cpuFlag != 1:
-                currentBatchData = torch.cat((posBatch, negBatch), 0).cuda()
-                currentBatchLabels = torch.cat((posLabels, negLabels), 0).cuda()
-            else:
-                currentBatchData = torch.cat((posBatch, negBatch), 0)
-                currentBatchLabels = torch.cat((posLabels, negLabels), 0)
+                currentBatchData = currentBatchData.cuda()
+                currentBatchLabels = currentBatchLabels.cuda()
             
             optimizer.zero_grad()
             yEst = net(currentBatchData)
             loss = F.cross_entropy(yEst, currentBatchLabels)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=1.0)
             optimizer.step()
             
             instantaneousLoss = loss.item()
@@ -177,6 +196,11 @@ def main():
                 print('[%d, %5d] [Ins Training loss: %.3f] [Accum Training loss: %.3f] [TA Training loss: %.3f] [Val loss: %.3f] [Training Accuracy: %.2f] [Val Accuracy: %.2f]' %
                       (epoch+1, bb+1, instantaneousLoss, accumulatedLoss, taLoss, vaLoss, trainingAccuracy, valAccuracy))
                 
+                # Early stopping check (add after validation logging)
+                if epoch > 5 and np.mean(accuracies[1, -5:]) < maxValAccuracy - 1.0:
+                    print(f"Early stopping at epoch {epoch} - val accuracy plateaued")
+                    break
+
                 if args.savingOptions == '2':
                     save_net()
                     save_vals_accuracies()
@@ -194,6 +218,9 @@ def main():
                 net.train()
 
     print('Finished Training')
+
+    if args.gpuFlag != '0':
+        torch.cuda.empty_cache()  # Clean up GPU memory
 
     if args.savingOptions in ['1','2']:
         save_loss_vectors()

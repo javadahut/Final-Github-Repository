@@ -80,6 +80,8 @@ N.data = len(csvList)
 
 # -- Detect Duplicates --
 dupes = id_duplicates(directory.dataDir)
+valid_rows = [row for row in csvList if row[0] not in dupes]
+N.data = len(valid_rows)
 
 # -- Initialize Empty Variables (Delay Allocation) --
 frame_shape = None
@@ -88,8 +90,11 @@ pLabels = None
 
 # -- Main Processing Loop --
 cc = 0
+print(f"Processing {N.data} files...")
 for ii in range(N.data):
-    curr_filename = csvList[ii][0]
+    if ii % 10 == 0:
+        print(f"Progress: {ii}/{N.data} ({ii/N.data:.1%})")
+    curr_filename = valid_rows[ii][0]
     filename.currentTrainingFile = os.path.join(directory.dataDir, curr_filename)
 
     if curr_filename in dupes:
@@ -115,7 +120,8 @@ for ii in range(N.data):
         hop_length = int(np.floor(args.fs * args.tf * (1 - args.po)))
         n_mels = 128  # You can later make this configurable
         melSpectrogram = librosa.feature.melspectrogram(y=signal, sr=args.fs, n_fft=n_fft,
-                                                        hop_length=hop_length, n_mels=n_mels)
+                                                        hop_length=hop_length, n_mels=n_mels,
+                                                        fmin=20, fmax=args.fs // 2) # Biological hearing range
         processedImage = librosa.power_to_db(melSpectrogram, ref=np.max)
     else:
         raise ValueError("Unknown feature type: " + args.featureType)
@@ -131,21 +137,25 @@ for ii in range(N.data):
 
     # Resize to fixed dimensions for network compatibility (108 x 108)  
     from PIL import Image
+    fixed_dims = (128, 256)  # Mel bins x time frames
     procImgPIL = Image.fromarray(processedImage)
-    fixed_dims = (108, 108)
+    #fixed_dims = (args.fftl // 2, int(F.fs * T.x))  # Frequency bins x time frames
+    #if args.featureType == 'mel':
+    #    fixed_dims = (128, fixed_dims[1])  # Mel bins x time frames
     procImgPIL = procImgPIL.resize(fixed_dims, Image.BICUBIC)
     processedImage = np.asarray(procImgPIL)
 
     # -- Allocate pData/pLabels after knowing frame count --
     if frame_shape is None:
-        frame_shape = processedImage.shape  # Should now be (108, 108)
-        pData = np.zeros((N.data, 1, frame_shape[0], frame_shape[1]), dtype=np.float32)
+        frame_shape = processedImage.shape  # 
+        pData = np.memmap(os.path.join(directory.dataDirProcessed, 'temp.dat'),
+            dtype=np.float32, mode='w+', shape=(N.data, 1, *frame_shape)
+        )
         pLabels = -1 * np.ones(N.data, dtype=np.int64)
 
     # Save processedImage into pData array (corrected variable name)
     pData[cc, 0, :, :] = processedImage
-    pLabels[cc] = int(csvList[ii][1])
-
+    pLabels[cc] = int(valid_rows[ii][1])
 
     # Optional inspection
     if args.ins == 1:
@@ -166,8 +176,20 @@ pLabels = pLabels[:cc]
 # -- Save processed data if requested --
 if args.s == 1:
     print("Saving pData to disk...")
-    np.save(os.path.join(directory.dataDirProcessed, 'pData.npy'), pData)
+    np.save(os.path.join(directory.dataDirProcessed, 'pData.npy'), pData[:cc])
     print("Saving pLabels to disk...")
-    np.save(os.path.join(directory.dataDirProcessed, 'pLabels.npy'), pLabels)
+    np.save(os.path.join(directory.dataDirProcessed, 'pLabels.npy'), pLabels[:cc])
+
+# flush and delete the memmap before removal
+if pData is not None:
+    pData.flush()
+    del pData
+
+try:
+    os.remove(os.path.join(directory.dataDirProcessed, 'temp.dat'))
+except FileNotFoundError:
+    pass
+except PermissionError as e:
+    print(f"[WARNING] Could not remove temp.dat: {e}")
 
 print("FINISHED PROCESSING")

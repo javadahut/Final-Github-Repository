@@ -18,10 +18,16 @@ parser.add_argument('-valPercentage', dest='valPercentage', default=0.2, type=fl
 parser.add_argument('-testPercentage', dest='testPercentage', default=0.1, type=float)
 args = parser.parse_args()
 
+if not (0 <= args.valPercentage <= 1) or not (0 <= args.testPercentage <= 1):
+    raise ValueError("Percentages must be between 0 and 1")
+if args.valPercentage + args.testPercentage >= 1:
+    raise ValueError("Sum of val and test percentages must be < 1")
+
 directory.loadNumpyDataFrom = args.numpyDataDir
 N.valPercentage = args.valPercentage
 N.testPercentage = args.testPercentage
 
+'''
 def splitData(testND, valND, trainND, pDataPos, pDataNeg):
     dataShape = pDataPos.shape[1:4]
     # Extract the test set.
@@ -61,23 +67,69 @@ def splitData(testND, valND, trainND, pDataPos, pDataNeg):
     pTestData /= (pTrainingStd + 1e-6)
 
     return pTrainingDataPos, pTrainingDataNeg, (pValData, pValLabels), (pTestData, pTestLabels), pTrainingMean, pTrainingStd
+'''
+def splitData(testND, valND, trainND, pDataPos, pDataNeg):
+    # Split data FIRST (no normalization yet)
+    test_pos = pDataPos[:testND]
+    test_neg = pDataNeg[:testND]
+    val_pos = pDataPos[testND:testND+valND]
+    val_neg = pDataNeg[testND:testND+valND]
+    train_pos = pDataPos[testND+valND:]
+    train_neg = pDataNeg[testND+valND:]
+
+    # Compute stats ONLY from training data
+    training_concat = np.concatenate((train_pos, train_neg), axis=0)
+    pTrainingMean = np.mean(training_concat, axis=0)
+    pTrainingStd = np.std(training_concat, axis=0)
+
+    # Normalize ALL splits
+    train_pos = (train_pos - pTrainingMean) / (pTrainingStd + 1e-6)
+    train_neg = (train_neg - pTrainingMean) / (pTrainingStd + 1e-6)
+    
+    val_data = np.concatenate([
+        (val_pos - pTrainingMean) / (pTrainingStd + 1e-6),
+        (val_neg - pTrainingMean) / (pTrainingStd + 1e-6)
+    ], axis=0)
+    
+    test_data = np.concatenate([
+        (test_pos - pTrainingMean) / (pTrainingStd + 1e-6),
+        (test_neg - pTrainingMean) / (pTrainingStd + 1e-6)
+    ], axis=0)
+
+    # Labels
+    val_labels = np.concatenate([np.ones(val_pos.shape[0]), np.zeros(val_neg.shape[0])])
+    test_labels = np.concatenate([np.ones(test_pos.shape[0]), np.zeros(test_neg.shape[0])])
+
+    return train_pos, train_neg, (val_data, val_labels), (test_data, test_labels), pTrainingMean, pTrainingStd
 
 def minimumSamples(percentage, nNonDominant):
     samples = np.round(percentage * nNonDominant).astype(np.int64)
     return samples
 
+def verify_tensor(tensor, expected_shape, name=""):
+    if tensor.shape != expected_shape:
+        raise ValueError(f"{name} tensor shape mismatch. Got {tensor.shape}, expected {expected_shape}")
+    
 N.trainPercentage = 1 - (N.testPercentage + N.valPercentage)
 np.random.seed(1)
 
-pData = np.load(directory.loadNumpyDataFrom + 'pData.npy')
-pLabels = np.load(directory.loadNumpyDataFrom + 'pLabels.npy')
+pData = np.load(directory.loadNumpyDataFrom + 'pData.npy', mmap_mode='r')
+pLabels = np.load(directory.loadNumpyDataFrom + 'pLabels.npy', mmap_mode='r')
 
-I.randomIndices = np.random.permutation(pData.shape[0])
-pData = pData[I.randomIndices, :, :, :]
+I.randomIndices = np.random.permutation(pLabels.shape[0])
 pLabels = pLabels[I.randomIndices]
 
-pDataPos = np.copy(pData[pLabels == 1, :, :, :])
-pDataNeg = np.copy(pData[pLabels == 0, :, :, :])
+# Use indices to slice without copying all data into memory
+pData = np.load(directory.loadNumpyDataFrom + 'pData.npy', mmap_mode='r')
+pDataPosIndices = I.randomIndices[pLabels == 1]
+pDataNegIndices = I.randomIndices[pLabels == 0]
+pDataPos = np.copy(pData[pDataPosIndices])
+pDataNeg = np.copy(pData[pDataNegIndices])
+
+# Add class balance check
+pos_ratio = len(pDataPos) / (len(pDataPos) + len(pDataNeg))
+if not 0.4 <= pos_ratio <= 0.6:
+    print(f"[WARNING] Class imbalance detected: {pos_ratio:.1%} positive samples")
 
 if pDataPos.shape[0] >= pDataNeg.shape[0]:
     N.nonDominant = pDataNeg.shape[0]
@@ -97,6 +149,11 @@ tValLabels = torch.Tensor(valTuple[1]).long()
 tTestData = torch.Tensor(testTuple[0])
 tTestLabels = torch.Tensor(testTuple[1]).long()
 
+expected_shape = pTrainingDataPos.shape[1:]  # Get (C,H,W) from numpy array
+verify_tensor(tTrainingDataPos, (len(pTrainingDataPos), *expected_shape), "TrainingPos")
+verify_tensor(tValData, (len(valTuple[0]), *expected_shape), "Validation")
+
+print("[INFO] Saving tensors...")
 torch.save(tTrainingDataPos, directory.loadNumpyDataFrom + 'tTrainingDataPos')
 torch.save(tTrainingDataNeg, directory.loadNumpyDataFrom + 'tTrainingDataNeg')
 torch.save(tValData, directory.loadNumpyDataFrom + 'tValData')
@@ -104,4 +161,8 @@ torch.save(tValLabels, directory.loadNumpyDataFrom + 'tValLabels')
 torch.save(tTestData, directory.loadNumpyDataFrom + 'tTestData')
 torch.save(tTestLabels, directory.loadNumpyDataFrom + 'tTestLabels')
 
+print("[SUCCESS] Saved all tensors:")
+print(f"- Training: {len(pTrainingDataPos)} pos, {len(pTrainingDataNeg)} neg")
+print(f"- Validation: {len(valTuple[0])} samples")
+print(f"- Test: {len(testTuple[0])} samples")
 print('FIN')

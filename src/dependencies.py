@@ -14,7 +14,6 @@ import torch
 import aifc
 import argparse
 import torchvision
-import matplotlib
 import scipy
 from torch.utils.data import Dataset
 import torch.nn as nn
@@ -29,16 +28,18 @@ from sklearn.metrics import (
 )
 from collections import Counter
 from scipy.fftpack import fft
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import csv
 
-# Enable interactive plotting
-plt.ion()
-
-# Platform check for logging
+# Platform check for logging and backend selection
+import matplotlib
 if sys.platform.startswith("linux"):
     print("LINUX OS")
 elif sys.platform == "darwin":
     print("MAC OSX")
     matplotlib.use("TkAgg")
+
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+# Enable interactive plotting
+plt.ion()

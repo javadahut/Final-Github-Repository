@@ -52,7 +52,7 @@ class STFT(object):
             sys.exit(1)
 
         if flagDebug:
-            print("[DEBUG] STFT Parameters:")
+            print("[DEBUG] STFT/MEL Parameters:")
             print("Frame Length:", self.N.frameLength, "| Stride:", self.N.stride, "| FFT Length:", self.N.fft)
 
     def computeSTFT(self, x):
