@@ -51,6 +51,7 @@ parser.add_argument('-ins', default=0, type=int)
 # New argument to choose feature type:
 parser.add_argument('-feature', dest='featureType', default='stft', type=str, choices=['stft', 'mel'],
                     help='Feature extraction type: "stft" or "mel"')
+parser.add_argument('-dnn', required=True, type=str, help='DNN architecture name')
 args = parser.parse_args()
 
 # -- Configuration --
@@ -64,6 +65,24 @@ T.olap = args.po * T.frameLength
 N.fftLength = args.fftl
 I.rowsKept = np.asarray(range(args.rk[0], args.rk[1]))
 fftWindow = args.fftw
+
+# architecture dimensions
+arch_dims = {
+    'cnn_108x108': (108, 108),
+    'inceptionModuleV1_108x108': (108, 108),
+    'inceptionModuleV1_75x45': (75, 45),
+    'inceptionTwoModulesV1_75x45': (75, 45),
+    'inceptionTwoModulesV1_root1_75x45': (75, 45),
+    'inceptionV1_modularized': (108, 108),
+    'inceptionV1_modularized_mnist': (108, 108),
+    'centerlossSimple': (108, 108),
+    'efficientnetV2_S': (128, 128),
+    'ast': (128, 256)
+}
+
+fixed_dims = arch_dims.get(args.dnn)
+if fixed_dims is None:
+    raise ValueError(f"Unsupported architecture '{args.dnn}'.")
 
 # Create processed data directory if it doesn't exist
 if not os.path.exists(directory.dataDirProcessed):
@@ -118,7 +137,7 @@ for ii in range(N.data):
         import librosa
         n_fft = args.fftl
         hop_length = int(np.floor(args.fs * args.tf * (1 - args.po)))
-        n_mels = 128  # You can later make this configurable
+        n_mels = fixed_dims[0]  # configurable
         melSpectrogram = librosa.feature.melspectrogram(y=signal, sr=args.fs, n_fft=n_fft,
                                                         hop_length=hop_length, n_mels=n_mels,
                                                         fmin=20, fmax=args.fs // 2) # Biological hearing range
@@ -137,7 +156,7 @@ for ii in range(N.data):
 
     # Resize to fixed dimensions for network compatibility (108 x 108)  
     from PIL import Image
-    fixed_dims = (128, 256)  # Mel bins x time frames
+    #fixed_dims = (128, 256)  # Mel bins x time frames
     procImgPIL = Image.fromarray(processedImage)
     #fixed_dims = (args.fftl // 2, int(F.fs * T.x))  # Frequency bins x time frames
     #if args.featureType == 'mel':
