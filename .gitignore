@@ -4,7 +4,6 @@ Thumbs.db
 
 # Ignore data outputs
 data/processed*
-outputs/
 
 # Ignore Python cache
 __pycache__/
