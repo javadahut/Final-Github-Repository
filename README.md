@@ -200,8 +200,8 @@ All results are saved to the outputs/ directory.
 |-------------------------------------|--------------------|------------|----------------|
 | CNN (Baseline)                      | STFT Spectrogram   | 0.94       | ✔️ Implemented |
 | InceptionV1 (Baseline)              | STFT Spectrogram   | 0.96       | ✔️ Implemented |
-| EfficientNetV2-S                    | Mel Spectrogram    | >0.98      | ⏳ In Progress |
-| Audio Spectrogram Transformer (AST) | Mel Spectrogram    | >0.98      | ⏳ In Progress |
+| EfficientNetV2-S                    | Mel Spectrogram    | >0.98      | ✔️ Implemented |
+| Audio Spectrogram Transformer (AST) | Mel Spectrogram    | >0.98      | ✔️ Implemented |
 
 ---
 
